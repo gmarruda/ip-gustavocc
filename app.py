@@ -28,12 +28,12 @@ def get_ip():
         return Response(html_content, mimetype="text/html")
 
     # Handle curl headers
-    if "IPv4" in headers:
-        return Response(ipv4 if ipv4 else "NO_IPv4")
-    elif "IPv6" in headers:
-        return Response(ipv6 if ipv6 != "NO_IPv6" else "NO_IPv6")
+    if "ipv4" in headers:
+        return Response((ipv4 if ipv4 else "NO_IPv4") + "\n")
+    elif "ipv6" in headers:
+        return Response((ipv6 if ipv6 != "NO_IPv6" else "NO_IPv6") + "\n")
     else:
-        return Response(ipv6 if ipv6 != "NO_IPv6" else ipv4)
+        return Response((ipv6 if ipv6 != "NO_IPv6" else ipv4) + "\n")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
