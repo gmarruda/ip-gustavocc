@@ -16,13 +16,24 @@ def get_ip_info(ip):
         print(f"Error fetching IP info: {e}")
         return "0,0", "Unknown City", "Unknown Country"
 
+def get_public_ipv6():
+    try:
+        response = requests.get("https://api64.ipify.org?format=json")
+        return response.json().get("ip", "No IPv6 found")
+    except requests.RequestException:
+        return "Failed to retrieve IPv6"
+
 @app.route("/", methods=["GET"])
 def get_ip():
     headers = request.headers
     ipv4 = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-    ipv6 = request.headers.get("X-Client-IP", "NO_IPv6")
+    #ipv6 = get_public_ipv6()
 
-    # Get location data
+    # Determine if it's an IPv6 address and get location data
+    #if ipv6 == "No IPv6 found":
+    #    location, city, country = get_ip_info(ipv4)
+    #else:
+    #    location, city, country = get_ip_info(ipv6)
     location, city, country = get_ip_info(ipv4)
 
     user_agent = headers.get("User-Agent", "").lower()
@@ -41,7 +52,6 @@ def get_ip():
         <body>
             <h1>Gustavo Migliorini Arruda IP checker</h1>
             <p>Your IPv4: {ipv4 or 'NO_IPv4'}</p>
-            <p>Your IPv6: {ipv6}</p>
             <p><strong>Location:</strong> {city}, {country}</p>
             
             <h2>Your IP Location on the Map</h2>
@@ -64,10 +74,11 @@ def get_ip():
     # Handle curl headers
     if "IPv4" in headers:
         return Response((ipv4 if ipv4 else "NO_IPv4") + "\n")
-    elif "IPv6" in headers:
-        return Response((ipv6 if ipv6 != "NO_IPv6" else "NO_IPv6") + "\n")
+    #elif "IPv6" in headers:
+    #    return Response((ipv6 if ipv6 != "NO_IPv6" else "NO_IPv6") + "\n")
     else:
-        return Response((ipv6 if ipv6 != "NO_IPv6" else ipv4) + "\n")
+    #    return Response((ipv6 if ipv6 != "NO_IPv6" else ipv4) + "\n")
+        return Response((ipv4 if ipv4 else "NO_IPv4") + "\n")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
