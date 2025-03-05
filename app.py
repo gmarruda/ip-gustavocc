@@ -50,7 +50,7 @@ def get_ip():
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
         </head>
         <body>
-            <h1>Gustavo Migliorini Arruda IP checker</h1>
+            <h1>Gustavo Migliorini Arruda IP checkera</h1>
             <p>Your IPv4: {ipv4 or 'NO_IPv4'}</p>
             <p><strong>Location:</strong> {city}, {country}</p>
             
