@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 import requests
 
 app = Flask(__name__)
@@ -16,24 +16,13 @@ def get_ip_info(ip):
         print(f"Error fetching IP info: {e}")
         return "0,0", "Unknown City", "Unknown Country"
 
-def get_public_ipv6():
-    try:
-        response = requests.get("https://api64.ipify.org?format=json")
-        return response.json().get("ip", "No IPv6 found")
-    except requests.RequestException:
-        return "Failed to retrieve IPv6"
-
 @app.route("/", methods=["GET"])
 def get_ip():
     headers = request.headers
-    ipv4 = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-    #ipv6 = get_public_ipv6()
 
-    # Determine if it's an IPv6 address and get location data
-    #if ipv6 == "No IPv6 found":
-    #    location, city, country = get_ip_info(ipv4)
-    #else:
-    #    location, city, country = get_ip_info(ipv6)
+    # Smart IPv4 detection (works inside Docker & behind proxy)
+    ipv4 = request.headers.get("X-Real-IP") or request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
+
     location, city, country = get_ip_info(ipv4)
 
     user_agent = headers.get("User-Agent", "").lower()
@@ -50,14 +39,32 @@ def get_ip():
             <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
         </head>
         <body>
-            <h1>Gustavo Migliorini Arruda IP checkera</h1>
+            <h1>Gustavo Migliorini Arruda IP checker</h1>
             <p>Your IPv4: {ipv4 or 'NO_IPv4'}</p>
             <p><strong>Location:</strong> {city}, {country}</p>
-            
+
+            <p>Your IPv6: <span id="ipv6_label">Click the button to check</span></p>
+            <button onclick="fetchIPv6()">Get IPv6</button>
+
             <h2>Your IP Location on the Map</h2>
             <div id="map" style="height: 400px;"></div>
 
             <script>
+                function fetchIPv6() {{
+                    fetch("https://api64.ipify.org?format=json")
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.ip.includes(".")) {{ // If response contains IPv4
+                            document.getElementById("ipv6_label").textContent = "No IPv6";
+                        }} else {{
+                            document.getElementById("ipv6_label").textContent = data.ip;
+                         }}
+                    }})
+                    .catch(error => {{
+                        console.error("Error fetching IPv6:", error);
+                        document.getElementById("ipv6_label").textContent = "Failed to get IPv6";
+                    }});
+                }}
                 var map = L.map('map').setView([{location}], 10);
                 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                     attribution: '© OpenStreetMap contributors'
@@ -71,14 +78,7 @@ def get_ip():
         """
         return Response(html_content, mimetype="text/html")
 
-    # Handle curl headers
-    if "IPv4" in headers:
-        return Response((ipv4 if ipv4 else "NO_IPv4") + "\n")
-    #elif "IPv6" in headers:
-    #    return Response((ipv6 if ipv6 != "NO_IPv6" else "NO_IPv6") + "\n")
-    else:
-    #    return Response((ipv6 if ipv6 != "NO_IPv6" else ipv4) + "\n")
-        return Response((ipv4 if ipv4 else "NO_IPv4") + "\n")
+    return Response(ipv4 + "\n")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
