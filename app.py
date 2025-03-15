@@ -16,22 +16,18 @@ def get_ip_info(ip):
         print(f"Error fetching IP info: {e}")
         return "0,0", "Unknown City", "Unknown Country"
 
-@app.route("/", methods=["GET"])
-def get_ip():
-    headers = request.headers
-
-    # Smart IPv4 detection (works inside Docker & behind proxy)
-    ipv4 = request.headers.get("X-Real-IP") or request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
-
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory("static", filename)
 
+@app.route("/", methods=["GET"])
+def get_ip():
+    headers = request.headers
+    # Smart IPv4 detection (works inside Docker & behind proxy)
+    ipv4 = request.headers.get("X-Real-IP") or request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
     location, city, country = get_ip_info(ipv4)
-
     user_agent = headers.get("User-Agent", "").lower()
     is_curl = "curl" in user_agent
-
     if not is_curl:
         html_content = f"""
         <!DOCTYPE html>
@@ -50,7 +46,6 @@ def serve_static(filename):
             <button onclick="fetchIPv6()">Get IPv6</button>
             <h2>Your IP Location on the Map</h2>
             <div id="map" style="height: 400px;"></div>
-            
             <script>
                 function fetchIPv6() {{
                     fetch("https://api64.ipify.org?format=json")
@@ -79,8 +74,6 @@ def serve_static(filename):
         </html>
         """
         return Response(html_content, mimetype="text/html")
-
     return Response(ipv4 + "\n")
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
