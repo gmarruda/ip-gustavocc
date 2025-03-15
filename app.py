@@ -1,7 +1,7 @@
-from flask import Flask, request, Response, jsonify
-import requests
+from flask import Flask, request, Response, jsonify, send_from_directory
+import requests, os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 def get_ip_info(ip):
     """Fetch IP geolocation data from ipinfo.io"""
@@ -23,6 +23,10 @@ def get_ip():
     # Smart IPv4 detection (works inside Docker & behind proxy)
     ipv4 = request.headers.get("X-Real-IP") or request.headers.get("X-Forwarded-For", request.remote_addr).split(",")[0].strip()
 
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory("static", filename)
+
     location, city, country = get_ip_info(ipv4)
 
     user_agent = headers.get("User-Agent", "").lower()
@@ -35,20 +39,18 @@ def get_ip():
         <head>
             <meta name="robots" content="noindex, nofollow">
             <title>Gustavo Migliorini Arruda IP checker</title>
-            <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-            <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+            <link rel="stylesheet" href="/static/leaflet.css" />
+            <script src="/static/leaflet.js"></script>
         </head>
         <body>
             <h1>Gustavo Migliorini Arruda IP checker</h1>
             <p>Your IPv4: {ipv4 or 'NO_IPv4'}</p>
             <p><strong>Location:</strong> {city}, {country}</p>
-
             <p>Your IPv6: <span id="ipv6_label">Click the button to check</span></p>
             <button onclick="fetchIPv6()">Get IPv6</button>
-
             <h2>Your IP Location on the Map</h2>
             <div id="map" style="height: 400px;"></div>
-
+            
             <script>
                 function fetchIPv6() {{
                     fetch("https://api64.ipify.org?format=json")
@@ -58,7 +60,7 @@ def get_ip():
                             document.getElementById("ipv6_label").textContent = "No IPv6";
                         }} else {{
                             document.getElementById("ipv6_label").textContent = data.ip;
-                         }}
+                        }}
                     }})
                     .catch(error => {{
                         console.error("Error fetching IPv6:", error);
